@@ -1,9 +1,18 @@
-# app/main.py
+"""Aplicación FastAPI: monta el router con include_router."""
+
 from fastapi import FastAPI
 
-app = FastAPI(title="API de Materias", version="1.0.0")
+from app.router import router
+
+app = FastAPI(
+    title="API Gimnasio — Planes de Membresía",
+    version="1.0.0",
+    description="Examen FastAPI variante 1: CRUD en memoria, facturación y planes contratados.",
+)
+
+app.include_router(router)
 
 
 @app.get("/")
 def raiz() -> dict:
-    return {"api": "materias", "docs": "/docs"}
+    return {"api": "planes de membresía", "docs": "/docs"}
