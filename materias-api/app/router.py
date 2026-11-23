@@ -44,6 +44,52 @@ def crear_plan(nuevo_plan: PlanCrear) -> dict:
     return plan_creado
 
 
+# Pregunta 2
+@router.get("/facturacion-periodo", status_code=status.HTTP_200_OK)
+def facturar_periodo(
+    meses: int = Query(ge=1, le=24, description="Cantidad de meses que contrata el socio"),
+    nivel: int | None = Query(default=None, ge=1, le=5, description="Filtra por nivel"),
+) -> dict:
+    
+    seleccion: list[dict] = []
+    for plan in PLANES:
+        if nivel is not None and plan["nivel"] != nivel:
+            continue
+        seleccion.append(plan)
+
+    
+    if not seleccion:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No hay planes registrados para el nivel {nivel}",
+        )
+
+    
+    suma_precios = 0
+    con_entrenador = 0
+    for plan in seleccion:
+        suma_precios += plan["precio_mensual"]
+        if plan["incluye_entrenador"]:
+            con_entrenador += 1
+
+    facturacion_base = suma_precios * meses
+
+    
+    descuento_aplicado = meses >= 12
+    facturacion_estimada = facturacion_base * 0.85 if descuento_aplicado else facturacion_base
+
+    
+    return {
+        "planes": len(seleccion),
+        "meses": meses,
+        "precio_promedio": round(suma_precios / len(seleccion), 2),
+        "facturacion_base": facturacion_base,
+        "descuento_aplicado": descuento_aplicado,
+        "facturacion_estimada": round(facturacion_estimada, 2),
+        "porcentaje_con_entrenador": round(con_entrenador / len(seleccion) * 100, 1),
+    }
+
+
 @router.get("/planes/{codigo}", response_model=PlanSalida, status_code=status.HTTP_200_OK)
 def ver_plan(plan: PlanExistente) -> dict:
 
