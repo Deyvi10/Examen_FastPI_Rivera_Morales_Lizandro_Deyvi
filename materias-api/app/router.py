@@ -89,6 +89,50 @@ def facturar_periodo(
         "porcentaje_con_entrenador": round(con_entrenador / len(seleccion) * 100, 1),
     }
 
+# Pregunta 3
+@router.get("/contrataciones-socio", status_code=status.HTTP_200_OK)
+def contrataciones_socio(
+    contratados: list[str] | None = Query(
+        default=None,
+        description="Códigos ya contratados; repite la clave ?contratados=BAS101&contratados=EST202",
+    ),
+) -> dict:
+   
+    if not PLANES:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No hay planes registrados",
+        )
+
+
+    codigos_contratados = {codigo.upper() for codigo in contratados} if contratados else set()
+
+
+    total = 0
+    cantidad_contratados = 0
+    disponibles: list[str] = []
+    ingreso_disponibles = 0
+    mas_caro: dict | None = None
+
+    for plan in PLANES:
+        total += 1
+        if plan["codigo"] in codigos_contratados:
+            cantidad_contratados += 1
+            continue
+        disponibles.append(plan["codigo"])
+        ingreso_disponibles += plan["precio_mensual"]
+        if mas_caro is None or plan["precio_mensual"] > mas_caro["precio_mensual"]:
+            mas_caro = plan
+
+    return {
+        "total": total,
+        "contratados": cantidad_contratados,
+        "disponibles": disponibles,
+        "porcentaje_contratacion": round(cantidad_contratados / total * 100, 1),
+        "ingreso_potencial_disponibles": ingreso_disponibles,
+        
+        "plan_disponible_mas_caro": mas_caro["codigo"] if mas_caro is not None else None,
+    }
 
 @router.get("/planes/{codigo}", response_model=PlanSalida, status_code=status.HTTP_200_OK)
 def ver_plan(plan: PlanExistente) -> dict:
